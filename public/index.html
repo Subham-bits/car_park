@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking History</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center align items in the body */
+            justify-content: center; /* Vertically center items */
+            height: 100vh; /* Full viewport height */
+            margin: 0; /* Remove default margin */
+        }
+
+        table {
+            border-collapse: collapse; /* Remove space between table cells */
+            width: 80%; /* Adjust table width as needed */
+            margin: 20px 0; /* Space around the table */
+        }
+
+        th, td {
+            border: 1px solid #ddd; /* Add border to table cells */
+            padding: 8px; /* Padding inside cells */
+            text-align: center; /* Center text in cells */
+        }
+
+        th {
+            background-color: #f2f2f2; /* Header background color */
+        }
+    </style>
+</head>
+<body>
+    <h1>Parking History</h1>
+    <table id="parking-history-table">
+        <thead>
+            <tr>
+                <th>Serial No.</th>
+                <th>RFID Tag</th>
+                <th>Entry Time</th>
+                <th>Exit Time</th>
+                <th>Slot Number</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dynamic content will be inserted here -->
+        </tbody>
+    </table>
+
+    <script>
+        $(document).ready(function() {
+            // Fetch the parking history data
+            $.get('/history', function(data) {
+                const tbody = $('#parking-history-table tbody');
+                tbody.empty(); // Clear existing rows
+
+                // Populate table with parking history data in reverse order
+                for (let i = data.length - 1; i >= 0; i--) {
+                    const record = data[i];
+                    const row = `<tr>
+                        <td>${data.length - i}</td> <!-- Serial number -->
+                        <td>${record.tag}</td>
+                        <td>${new Date(record.entry_time).toLocaleString()}</td>
+                        <td>${record.exit_time ? new Date(record.exit_time).toLocaleString() : 'N/A'}</td>
+                        <td>${record.slot ? record.slot.slot_number : 'N/A'}</td> <!-- Handle slot if it's not present -->
+                    </tr>`;
+                    tbody.append(row);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
