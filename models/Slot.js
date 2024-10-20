@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const slotSchema = new mongoose.Schema({
-    slot_number: { type: String, required: true, unique: true },
+    slot_number: { type: Number, required: true, unique: true },
     is_occupied: { type: Boolean, default: false }
 });
 

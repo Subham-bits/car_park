@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
 import Slot from "./models/Slot.js";
-import Car from "./models/Car.js";
 import ParkingHistory from "./models/ParkingHistory.js";
 import { fileURLToPath } from "url";
 
@@ -31,72 +30,84 @@ mongoose
 
 // API Endpoint to handle parking actions
 app.get("/parking", async (req, res) => {
-  const { tag, action } = req.query;
+  const { tag, action, slot } = req.query;
 
   if (!tag || !action) {
-      return res.status(400).send("Invalid parameters");
+    return res.status(400).send("Invalid parameters");
   }
 
   try {
-      if (action === "entry") {
-          const existingHistory = await ParkingHistory.findOne({ tag, exit_time: null });
+    if (action === "entry") {
+      const existingHistory = await ParkingHistory.findOne({ tag, exit_time: null });
 
-          if (existingHistory) {
-              return res.status(400).send("Car already inside");
-          }
-
-          const availableSlot = await Slot.findOne({ is_occupied: false });
-
-          if (!availableSlot) {
-              return res.status(400).send("No available slots");
-          }
-
-          availableSlot.is_occupied = true;
-          await availableSlot.save();
-
-          const entry_time = new Date();
-          const parkingRecord = new ParkingHistory({
-              tag,
-              entry_time,
-              exit_time: null,
-              slot: availableSlot._id,
-              slot_number: availableSlot.slot_number, // Set the slot number here
-              action: "entry"
-          });
-          await parkingRecord.save();
-
-          return res.status(200).send(`Entry recorded. Assigned Slot: ${availableSlot.slot_number}`);
-      } else if (action === "exit") {
-          console.log("Attempting exit for tag:", tag);
-          const parkingRecord = await ParkingHistory.findOne({ tag, exit_time: null }).populate("slot");
-          console.log("Found Parking Record:", parkingRecord);
-
-          if (!parkingRecord) {
-              return res.status(400).send("Car not found or already exited");
-          }
-
-          const exit_time = new Date();
-          parkingRecord.exit_time = exit_time;
-          parkingRecord.action = "exit"; // Ensure action is set
-          await parkingRecord.save();
-
-          const slot = parkingRecord.slot;
-          slot.is_occupied = false;
-          await slot.save();
-
-          return res.status(200).send(`Exit recorded. Freed Slot: ${slot.slot_number}`);
-      } else {
-          return res.status(400).send("Invalid action");
+      // If the car is already inside
+      if (existingHistory) {
+        return res.status(400).send("Car already inside");
       }
+
+      // Find the selected slot
+      const selectedSlot = await Slot.findOne({ slot_number: slot });
+
+      // Check if the slot exists and is not occupied
+      if (!selectedSlot) {
+        return res.status(400).send("Invalid slot");
+      }
+
+      if (selectedSlot.is_occupied) {
+        return res.status(400).send("Slot already occupied");
+      }
+
+      // Mark the slot as occupied
+      selectedSlot.is_occupied = true;
+      await selectedSlot.save();
+
+      // Create a new parking history record
+      const entry_time = new Date();
+      const parkingRecord = new ParkingHistory({
+        tag,
+        entry_time,
+        exit_time: null,
+        slot: selectedSlot._id,
+        slot_number: selectedSlot.slot_number,
+        action: "entry",
+      });
+      await parkingRecord.save();
+
+      return res.status(200).send(`Entry recorded. Assigned Slot: ${selectedSlot.slot_number}`);
+
+    } else if (action === "exit") {
+      console.log("Attempting exit for tag:", tag);
+      const parkingRecord = await ParkingHistory.findOne({ tag, exit_time: null }).populate("slot");
+      console.log("Found Parking Record:", parkingRecord);
+
+      // Check if parking record exists
+      if (!parkingRecord) {
+        return res.status(400).send("Car not found or already exited");
+      }
+
+      const exit_time = new Date();
+      parkingRecord.exit_time = exit_time;
+      parkingRecord.action = "exit"; // Ensure action is set
+      await parkingRecord.save();
+
+      const slot = parkingRecord.slot;
+      slot.is_occupied = false;
+      await slot.save();
+
+      return res.status(200).send(`Exit recorded. Freed Slot: ${slot.slot_number}`);
+    } else {
+      return res.status(400).send("Invalid action");
+    }
   } catch (error) {
-      console.error("Error processing request:", error);
-      return res.status(500).send("Internal server error");
+    console.error("Error processing request:", error);
+    return res.status(500).send("Internal server error");
   }
 });
 
+// API Endpoint to get the current parking status
 app.get("/status", async (req, res) => {
   try {
-    // Fetch parked car data from ParkingHistory instead of Car model
+    // Fetch parked car data from ParkingHistory
     const parkedCars = await ParkingHistory.find({ exit_time: null }).populate("slot").exec();
 
     // Format the data for the response
@@ -115,6 +126,7 @@ app.get("/status", async (req, res) => {
   }
 });
 
+// API Endpoint to get parking history
 app.get("/history", async (req, res) => {
   try {
     const history = await ParkingHistory.find().sort({ entry_time: -1 }).populate("slot"); // Sort by entry time and populate the slot

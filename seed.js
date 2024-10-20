@@ -12,11 +12,11 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
 
         // Seed initial parking slots
         const slots = [
-            { slot_number: 'Slot1' },
-            { slot_number: 'Slot2' },
-            { slot_number: 'Slot3' },
-            { slot_number: 'Slot4' },
-            { slot_number: 'Slot5' }
+            { slot_number: '1' },
+            { slot_number: '2' },
+            { slot_number: '3' },
+            { slot_number: '4' },
+            { slot_number: '5' }
         ];
 
         await Slot.insertMany(slots);
