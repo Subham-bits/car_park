@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking History</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .button-container {
+            margin: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Parking History</h1>
+    
+    <div class="button-container">
+        <button id="status-page-btn">Go to Status Page</button>
+    </div>
+    
+    <table id="parking-history-table">
+        <thead>
+            <tr>
+                <th>Serial No.</th>
+                <th>RFID Tag</th>
+                <th>Entry Time</th>
+                <th>Exit Time</th>
+                <th>Slot Number</th>
+                <th>Parking Duration</th>
+                <th>Parking Charges</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dynamic content will be inserted here -->
+        </tbody>
+    </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Fetch the parking history data
+            fetch('/history')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector('#parking-history-table tbody');
+                    tbody.innerHTML = ''; // Clear existing rows
+
+                    // Populate table with parking history data in reverse order
+                    for (let i = data.length - 1; i >= 0; i--) {
+                        const record = data[i];
+                        const entryTime = new Date(record.entry_time);
+                        const exitTime = new Date(record.exit_time);
+
+                        const diffInMilliseconds = exitTime - entryTime;
+                        const diffInMinutes = diffInMilliseconds / (1000 * 60);
+                        const Amount = diffInMinutes * 2;
+
+                        const row = `
+                            <tr>
+                                <td>${data.length - i}</td> <!-- Serial number -->
+                                <td>${record.tag}</td>
+                                <td>${new Date(record.entry_time).toLocaleString()}</td>
+                                <td>${record.exit_time ? new Date(record.exit_time).toLocaleString() : 'N/A'}</td>
+                                <td>${record.slot ? record.slot.slot_number : 'N/A'}</td> <!-- Handle slot if it's not present -->
+                                <td>${record.exit_time ? `${Math.round(diffInMinutes)} min` : 'N/A'}</td>
+                                <td>${record.exit_time ? `₹ ${ Amount > 30 ? Math.round(Amount) : 30 }` : 'N/A'}</td>
+                            </tr>`;
+                        tbody.insertAdjacentHTML('beforeend', row);
+                    }
+                });
+
+            // Handle button click to redirect to status page
+            document.querySelector('#status-page-btn').addEventListener('click', function () {
+                window.location.href = '/';
+            });
+        });
+    </script>
+</body>
+
+</html>

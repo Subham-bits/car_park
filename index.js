@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 const app = express();
 
-// Serve static files
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, "public")));
 
 // Middleware to parse JSON bodies
@@ -135,6 +135,11 @@ app.get("/history", async (req, res) => {
     console.error("Error fetching history:", error);
     res.status(500).send("Internal server error");
   }
+});
+
+// Serve 'history.html' when the user goes to the /history-page endpoint
+app.get("/history-page", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "history.html"));
 });
 
 app.listen(port, () => {
